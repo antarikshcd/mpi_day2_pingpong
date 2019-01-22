@@ -4,10 +4,12 @@ program main
     implicit none
 	include 'mpif.h'
 	integer, parameter :: mk = kind(1.0D0)
-	integer :: count = 1
-	integer :: ierror, rank, size, ilen, i, tag, status(MPI_STATUS_SIZE),src,dest
+	integer, parameter :: count = 2
+	integer :: ierror, rank, size, ilen, i, tag, &
+               status(MPI_STATUS_SIZE),src,dest, ping_pong_cnt
     character(len=256) :: name
-    real(mk) :: msg
+    integer(mk), dimension(count) :: msg
+    real(mk) :: t1, t2 
 
     ! initialize MPI
     call MPI_Init(ierror)
@@ -26,7 +28,7 @@ program main
     !print*,'MPI processor name', name(1:ilen), 'error status: ',ierror
 
     ! set the message
-    msg = 1.0_mk
+    msg = 1
 
     
     ! start the sending and receiving
@@ -37,26 +39,38 @@ program main
         ! first send and then receive
            !rank of the destination process
            dest = rank + 1 ! send to the right
+           src =  rank + 1
+
+           ! time the code using MPI_Wtime
+           t1 = MPI_Wtime()
+
            call MPI_Send(msg, count, MPI_DOUBLE_PRECISION, dest, tag,&
                           MPI_COMM_WORLD, ierror) 
 
-           
-           src =  rank + 1 
+           ! time the code using MPI_Wtime
+           ! this code executes only when receipt of message is conformed
+           t2 = MPI_Wtime()
+           ! time for sending the message
+           print*,'Time'
+            
            ! now receive the messgae sent back by the receiver
            call MPI_Recv(msg, count, MPI_DOUBLE_PRECISION, src, tag,&
                           MPI_COMM_WORLD, status, ierror)
 
+            
             print*,'PONG: Rank ',rank, 'received msg= ',msg, 'from source ',src
             
         else
             ! first receive and then send
             src = rank - 1
+            dest = rank - 1 ! send to the right
+
             call MPI_Recv(msg, count, MPI_DOUBLE_PRECISION, src, tag,&
                           MPI_COMM_WORLD, status, ierror)
             print*,'PING: Rank ',rank, 'received msg= ',msg, 'from source ',src
      
             ! now send the message back to the sender
-           dest = rank - 1 ! send to the right
+           
            call MPI_Send(msg, count, MPI_DOUBLE_PRECISION, dest, tag,&
                           MPI_COMM_WORLD, ierror) 
 
