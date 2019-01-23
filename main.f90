@@ -4,8 +4,8 @@ program main
     implicit none
 	include 'mpif.h'
 	integer, parameter :: mk = kind(1.0D0)
-	integer, parameter :: count = 2**18
-	integer :: ierror, rank, size, ilen, i, tag, &
+	integer(mk), parameter :: count = 2**18
+	integer(mk) :: ierror, rank, size, ilen, i, tag, &
                status(MPI_STATUS_SIZE),src,dest, ping_pong_cnt, &
                ping_pong_limit
     character(len=256) :: name
@@ -29,7 +29,7 @@ program main
     !print*,'MPI processor name', name(1:ilen), 'error status: ',ierror
     
     ! set the ping pong ping_pong_limit
-    ping_pong_limit = 1
+    ping_pong_limit = 10
 
     ! set the message
     msg = 1
@@ -40,7 +40,7 @@ program main
     if (mod(size,2) .eq. 0) then
 
         
-        do while (ping_pong_cnt < ping_pong_limit)
+        do while (ping_pong_cnt < ping_pong_limit/2)
         if (mod(rank,2) .eq. 0) then
         ! first send and then receive
            !rank of the destination process
@@ -83,8 +83,14 @@ program main
            ! update the ping-pong counter before send operation
            ping_pong_cnt = ping_pong_cnt + 1
            
+           ! time the code using MPI_Wtime
+           t1 = MPI_Wtime()
            call MPI_Send(msg, count, MPI_DOUBLE_PRECISION, dest, tag,&
                           MPI_COMM_WORLD, ierror) 
+           t2 = MPI_Wtime()
+           ! time for sending the message
+           print*,'Time to send message = ', (t2-t1),'[s] from rank ',rank,&
+                  'to rank ', dest
 
 
         endif   
