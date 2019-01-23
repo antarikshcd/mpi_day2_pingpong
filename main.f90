@@ -4,13 +4,13 @@ program main
     implicit none
 	include 'mpif.h'
 	integer, parameter :: mk = kind(1.0D0)
-	integer(mk), parameter :: count = 2**18
+	integer(mk) :: count 
 	integer(mk) :: ierror, rank, size, ilen, i, tag, &
                status(MPI_STATUS_SIZE),src,dest, ping_pong_cnt, &
                ping_pong_limit
     character(len=256) :: name
-    character(len=256) :: filename
-    integer(mk), dimension(count) :: msg
+    character(len=256) :: filename, countchar
+    integer(mk), dimension(:), allocatable :: msg
     real(mk) :: t1, t2, tick 
 
     ! initialize MPI
@@ -28,6 +28,20 @@ program main
     ! print the processor name
     call MPI_Get_Processor_Name(name, ilen, ierror) 
     !print*,'MPI processor name', name(1:ilen), 'error status: ',ierror
+
+    ! allocate the integer array msg
+    !First, make sure the right number of inputs have been provided
+    if(command_argument_count().ne.1) then
+       write(*,*)'ERROR, ONE COMMAND-LINE ARGUMENT REQUIRED: ENTER MESSAGE SIZE, STOPPING'
+       stop
+    endif
+
+    call get_command_argument(1,countchar)   !first, read in the two values
+
+    ! convert it into integer of type double
+    READ(countchar,*)count
+
+    allocate(msg(count))    
     
     ! set the ping pong ping_pong_limit
     ping_pong_limit = 10
@@ -46,7 +60,7 @@ program main
 
     endif
     ! generate the save file name
-    write(filename, '(A,I1.1,A)') 'output_rank', rank,'.dat'     
+    write(filename, '(A,I1.1,A)') '2_output_rank', rank,'.dat'     
     
     if (mod(size,2) .eq. 0) then
 
@@ -87,7 +101,7 @@ program main
                           MPI_COMM_WORLD, status, ierror)
 
             
-            print*,'PONG: Rank ',rank, 'received msg from source ',src
+            print*,'PONG: Rank ',rank, 'received msg of size ',count,'from source ',src
             
         else
             ! first receive and then send
@@ -96,7 +110,7 @@ program main
 
             call MPI_Recv(msg, count, MPI_DOUBLE_PRECISION, src, tag,&
                           MPI_COMM_WORLD, status, ierror)
-            print*,'PING: Rank ',rank, 'received msg from source ',src
+            print*,'PING: Rank ',rank, 'received msg of size ',count ,'from source ',src
      
             ! now send the message back to the sender
            ! update the ping-pong counter before send operation
