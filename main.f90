@@ -40,7 +40,8 @@ program main
 
     ! convert it into integer of type double
     READ(countchar,*)count
-
+    
+    ! allocate message
     allocate(msg(count))    
     
     ! set the ping pong ping_pong_limit
@@ -60,7 +61,7 @@ program main
 
     endif
     ! generate the save file name
-    write(filename, '(A,I1.1,A)') '2_output_rank', rank,'.dat'     
+    write(filename, '(A,I1.1,A)') '3_output_rank', rank,'.dat'     
     
     if (mod(size,2) .eq. 0) then
 
