@@ -9,8 +9,9 @@ program main
                status(MPI_STATUS_SIZE),src,dest, ping_pong_cnt, &
                ping_pong_limit
     character(len=256) :: name
+    character(len=256) :: filename
     integer(mk), dimension(count) :: msg
-    real(mk) :: t1, t2 
+    real(mk) :: t1, t2, tick 
 
     ! initialize MPI
     call MPI_Init(ierror)
@@ -36,6 +37,16 @@ program main
     ! intitalize the ping pong counter
     ping_pong_cnt = 0
     ! start the sending and receiving
+
+    !get resolution of time
+    tick = MPI_Wtick()
+    if (rank .eq. 0) then
+
+         print*, 'Wall time scale= ', tick, '[s]'
+
+    endif
+    ! generate the save file name
+    write(filename, '(A,I1.1,A)') 'output_rank', rank,'.dat'     
     
     if (mod(size,2) .eq. 0) then
 
@@ -46,6 +57,8 @@ program main
            !rank of the destination process
            dest = rank + 1 ! send to the right
            src =  rank + 1
+
+
            
            
            ! update the ping-pong counter before send operation
@@ -62,6 +75,12 @@ program main
            ! time for sending the message
            print*,'Time to send message = ', (t2-t1),'[s] from rank ',rank,&
                   'to rank ', dest
+
+           !call sleep(0.0000001)
+           open(10, file=filename, position='append')
+           write(10, *) count, (t2-t1)
+           close(10)
+           call flush(10)       
             
            ! now receive the messgae sent back by the receiver
            call MPI_Recv(msg, count, MPI_DOUBLE_PRECISION, src, tag,&
@@ -91,6 +110,10 @@ program main
            ! time for sending the message
            print*,'Time to send message = ', (t2-t1),'[s] from rank ',rank,&
                   'to rank ', dest
+           open(10, file=filename, position='append')
+           write(10, *) count, (t2-t1)
+           close(10)
+           call flush(10)       
 
 
         endif   
